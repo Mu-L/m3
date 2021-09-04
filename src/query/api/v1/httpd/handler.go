@@ -586,9 +586,12 @@ func (h *Handler) registerHealthEndpoints() error {
 
 // Endpoints useful for profiling the service.
 func (h *Handler) registerProfileEndpoints() error {
+	debugHandler := http.NewServeMux()
+	xdebug.RegisterPProfHandlers(debugHandler)
+
 	return h.registry.Register(queryhttp.RegisterOptions{
 		PathPrefix: "/debug/pprof",
-		Handler:    http.NewServeMux(),
+		Handler:    debugHandler,
 	})
 }
 
