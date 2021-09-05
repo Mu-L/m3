@@ -10,6 +10,7 @@ type renderRouter struct {
 	renderHandler func(http.ResponseWriter, *http.Request)
 }
 
+// NewGraphiteRenderRouter returns a new graphite render router.
 func NewGraphiteRenderRouter() options.GraphiteRenderRouter {
 	return &renderRouter{}
 }
@@ -26,6 +27,7 @@ type findRouter struct {
 	findHandler func(http.ResponseWriter, *http.Request)
 }
 
+// NewGraphiteFindRouter returns a new graphite find router.
 func NewGraphiteFindRouter() options.GraphiteFindRouter {
 	return &findRouter{}
 }
