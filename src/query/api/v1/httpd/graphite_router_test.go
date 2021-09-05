@@ -21,6 +21,7 @@
 package httpd
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -43,7 +44,7 @@ func TestGraphiteRenderHandler(t *testing.T) {
 	})
 	rr := httptest.NewRecorder()
 
-	req, err := http.NewRequest("GET", "/find?target=sum(metric)", nil)
+	req, err := http.NewRequestWithContext(context.Background(), "GET", "/find?target=sum(metric)", nil)
 	require.NoError(t, err)
 	router.ServeHTTP(rr, req)
 	assert.Equal(t, 1, called)
@@ -61,7 +62,7 @@ func TestGraphiteFindHandler(t *testing.T) {
 	})
 	rr := httptest.NewRecorder()
 
-	req, err := http.NewRequest("GET", "/render?target=sum(metric)", nil)
+	req, err := http.NewRequestWithContext(context.Background(), "GET", "/render?target=sum(metric)", nil)
 	require.NoError(t, err)
 	router.ServeHTTP(rr, req)
 	assert.Equal(t, 1, called)
