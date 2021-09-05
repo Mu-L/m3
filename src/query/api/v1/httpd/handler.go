@@ -333,17 +333,23 @@ func (h *Handler) RegisterRoutes() error {
 		return err
 	}
 
-	// Graphite endpoints.
+	// Graphite routable endpoints.
+	h.options.GraphiteRenderRouter().Setup(options.GraphiteRenderRouterOptions{
+		RenderHandler: graphite.NewRenderHandler(h.options).ServeHTTP,
+	})
+	h.options.GraphiteFindRouter().Setup(options.GraphiteFindRouterOptions{
+		FindHandler: graphite.NewFindHandler(h.options).ServeHTTP,
+	})
 	if err := h.registry.Register(queryhttp.RegisterOptions{
 		Path:    graphite.ReadURL,
-		Handler: graphite.NewRenderHandler(h.options),
+		Handler: h.options.GraphiteRenderRouter(),
 		Methods: graphite.ReadHTTPMethods,
 	}); err != nil {
 		return err
 	}
 	if err := h.registry.Register(queryhttp.RegisterOptions{
 		Path:    graphite.FindURL,
-		Handler: graphite.NewFindHandler(h.options),
+		Handler: h.options.GraphiteFindRouter(),
 		Methods: graphite.FindHTTPMethods,
 	}); err != nil {
 		return err

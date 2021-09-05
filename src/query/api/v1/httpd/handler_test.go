@@ -31,6 +31,7 @@ import (
 	handleroptions3 "github.com/m3db/m3/src/cluster/placementhandler/handleroptions"
 	"github.com/m3db/m3/src/cmd/services/m3coordinator/ingest"
 	"github.com/m3db/m3/src/cmd/services/m3query/config"
+	"github.com/m3db/m3/src/query/api/v1/handler/graphite"
 	m3json "github.com/m3db/m3/src/query/api/v1/handler/json"
 	"github.com/m3db/m3/src/query/api/v1/handler/prometheus/handleroptions"
 	"github.com/m3db/m3/src/query/api/v1/handler/prometheus/native"
@@ -38,7 +39,7 @@ import (
 	"github.com/m3db/m3/src/query/api/v1/middleware"
 	"github.com/m3db/m3/src/query/api/v1/options"
 	"github.com/m3db/m3/src/query/executor"
-	graphite "github.com/m3db/m3/src/query/graphite/storage"
+	graphiteStorage "github.com/m3db/m3/src/query/graphite/storage"
 	"github.com/m3db/m3/src/query/models"
 	"github.com/m3db/m3/src/query/storage"
 	m3storage "github.com/m3db/m3/src/query/storage/m3"
@@ -116,8 +117,10 @@ func setupHandler(
 		svcDefaultOptions,
 		NewQueryRouter(),
 		NewQueryRouter(),
-		graphite.M3WrappedStorageOptions{},
+		graphiteStorage.M3WrappedStorageOptions{},
 		testM3DBOpts,
+		NewGraphiteRenderRouter(),
+		NewGraphiteFindRouter(),
 	)
 	if err != nil {
 		return nil, err
@@ -290,6 +293,56 @@ func TestHealthGet(t *testing.T) {
 	assert.True(t, result > 0)
 }
 
+func TestGraphiteRender(t *testing.T) {
+	tests := []struct {
+		target string
+	}{
+		{"GET"},
+		{"POST"},
+	}
+
+	for _, tt := range tests {
+		url := graphite.ReadURL
+		t.Run(tt.target, func(t *testing.T) {
+			req := httptest.NewRequest(tt.target, url, nil)
+			res := httptest.NewRecorder()
+			ctrl := gomock.NewController(t)
+			storage, _ := m3.NewStorageAndSession(t, ctrl)
+
+			h, err := setupHandler(storage)
+			require.NoError(t, err, "unable to setup handler")
+			h.RegisterRoutes()
+			h.Router().ServeHTTP(res, req)
+			require.Equal(t, http.StatusBadRequest, res.Code, "Empty request")
+		})
+	}
+}
+
+func TestGraphiteFind(t *testing.T) {
+	tests := []struct {
+		target string
+	}{
+		{"GET"},
+		{"POST"},
+	}
+
+	for _, tt := range tests {
+		url := graphite.FindURL
+		t.Run(tt.target, func(t *testing.T) {
+			req := httptest.NewRequest(tt.target, url, nil)
+			res := httptest.NewRecorder()
+			ctrl := gomock.NewController(t)
+			storage, _ := m3.NewStorageAndSession(t, ctrl)
+
+			h, err := setupHandler(storage)
+			require.NoError(t, err, "unable to setup handler")
+			h.RegisterRoutes()
+			h.Router().ServeHTTP(res, req)
+			require.Equal(t, http.StatusBadRequest, res.Code, "Empty request")
+		})
+	}
+}
+
 func init() {
 	var err error
 	testWorkerPool, err = xsync.NewPooledWorkerPool(
@@ -352,7 +405,8 @@ func TestCustomRoutes(t *testing.T) {
 		fetchOptsBuilder, fetchOptsBuilder, fetchOptsBuilder,
 		models.QueryContextOptions{}, instrumentOpts, defaultCPUProfileduration,
 		defaultPlacementServices, svcDefaultOptions, NewQueryRouter(), NewQueryRouter(),
-		graphite.M3WrappedStorageOptions{}, testM3DBOpts)
+		graphiteStorage.M3WrappedStorageOptions{}, testM3DBOpts, NewGraphiteRenderRouter(), NewGraphiteFindRouter(),
+	)
 	require.NoError(t, err)
 	custom := &customHandler{
 		t:         t,
