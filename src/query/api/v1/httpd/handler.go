@@ -27,6 +27,10 @@ import (
 	_ "net/http/pprof" // needed for pprof handler registration
 	"time"
 
+	"github.com/gorilla/mux"
+	"github.com/jonboulle/clockwork"
+	"go.uber.org/zap"
+
 	"github.com/m3db/m3/src/cluster/placementhandler"
 	"github.com/m3db/m3/src/cluster/placementhandler/handleroptions"
 	"github.com/m3db/m3/src/cmd/services/m3query/config"
@@ -49,10 +53,6 @@ import (
 	xdebug "github.com/m3db/m3/src/x/debug"
 	extdebug "github.com/m3db/m3/src/x/debug/ext"
 	xhttp "github.com/m3db/m3/src/x/net/http"
-
-	"github.com/gorilla/mux"
-	"github.com/jonboulle/clockwork"
-	"go.uber.org/zap"
 )
 
 const (

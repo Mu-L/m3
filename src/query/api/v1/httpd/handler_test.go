@@ -28,6 +28,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/golang/mock/gomock"
+	"github.com/prometheus/prometheus/promql"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	handleroptions3 "github.com/m3db/m3/src/cluster/placementhandler/handleroptions"
 	"github.com/m3db/m3/src/cmd/services/m3coordinator/ingest"
 	"github.com/m3db/m3/src/cmd/services/m3query/config"
@@ -46,11 +51,6 @@ import (
 	"github.com/m3db/m3/src/query/test/m3"
 	"github.com/m3db/m3/src/x/instrument"
 	xsync "github.com/m3db/m3/src/x/sync"
-
-	"github.com/golang/mock/gomock"
-	"github.com/prometheus/prometheus/promql"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 var (
@@ -293,17 +293,20 @@ func TestHealthGet(t *testing.T) {
 	assert.True(t, result > 0)
 }
 
-func TestGraphiteRender(t *testing.T) {
+func TestGraphite(t *testing.T) {
 	tests := []struct {
+		url    string
 		target string
 	}{
-		{"GET"},
-		{"POST"},
+		{graphite.ReadURL, "GET"},
+		{graphite.ReadURL, "POST"},
+		{graphite.FindURL, "GET"},
+		{graphite.FindURL, "POST"},
 	}
 
 	for _, tt := range tests {
 		url := graphite.ReadURL
-		t.Run(tt.target, func(t *testing.T) {
+		t.Run(tt.url+"_"+tt.target, func(t *testing.T) {
 			req := httptest.NewRequest(tt.target, url, nil)
 			res := httptest.NewRecorder()
 			ctrl := gomock.NewController(t)
@@ -311,32 +314,8 @@ func TestGraphiteRender(t *testing.T) {
 
 			h, err := setupHandler(storage)
 			require.NoError(t, err, "unable to setup handler")
-			h.RegisterRoutes()
-			h.Router().ServeHTTP(res, req)
-			require.Equal(t, http.StatusBadRequest, res.Code, "Empty request")
-		})
-	}
-}
-
-func TestGraphiteFind(t *testing.T) {
-	tests := []struct {
-		target string
-	}{
-		{"GET"},
-		{"POST"},
-	}
-
-	for _, tt := range tests {
-		url := graphite.FindURL
-		t.Run(tt.target, func(t *testing.T) {
-			req := httptest.NewRequest(tt.target, url, nil)
-			res := httptest.NewRecorder()
-			ctrl := gomock.NewController(t)
-			storage, _ := m3.NewStorageAndSession(t, ctrl)
-
-			h, err := setupHandler(storage)
-			require.NoError(t, err, "unable to setup handler")
-			h.RegisterRoutes()
+			err = h.RegisterRoutes()
+			require.NoError(t, err)
 			h.Router().ServeHTTP(res, req)
 			require.Equal(t, http.StatusBadRequest, res.Code, "Empty request")
 		})
